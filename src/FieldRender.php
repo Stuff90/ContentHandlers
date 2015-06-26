@@ -182,6 +182,7 @@ class FieldRender extends ContentRender
 				$this->setTemplate( $this->customContentTemplate[ $sectionName ]);
 				if(file_exists($this->template))
 				{
+					$$sectionName = $extarctedContent;
 					ob_start();
 					include( $this->template );
 					$template = ob_get_contents();
