@@ -179,6 +179,16 @@ class FieldRender extends ContentRender
 			$methodName = 'getClean' . ucfirst($sectionName);
 			if(preg_match( $sectionRegexp , $contentPart , $extarctedContent))
 			{
+				$this->setTemplate( $this->customContentTemplate[ $sectionName ]);
+				if(file_exists($this->template))
+				{
+					ob_start();
+					include( $this->template );
+					$template = ob_get_contents();
+					ob_end_clean();
+
+					return $template;
+				}
 				return $this->$methodName( $extarctedContent );
 			}
 		}
