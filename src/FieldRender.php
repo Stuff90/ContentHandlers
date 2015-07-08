@@ -86,7 +86,7 @@ class FieldRender extends ContentRender
 		if(strlen($theAttachImage->post_content) > 0)
 		{
 			$output = 	'<figure class="fieldContent-image">';
-			$output .=		'<img src="'. $imageSrcFull .'" />';
+			$output .=		'<img class="fieldContent--image" src="'. $imageSrcFull .'" />';
 			$output .=		'<figcaption class="fieldContent-image--caption">' . $theAttachImage->post_content . '</figcaption>';
 			$output .=	'</figure>';
 		}
@@ -179,6 +179,17 @@ class FieldRender extends ContentRender
 			$methodName = 'getClean' . ucfirst($sectionName);
 			if(preg_match( $sectionRegexp , $contentPart , $extarctedContent))
 			{
+				$this->setTemplate( $this->customContentTemplate[ $sectionName ]);
+				if(file_exists($this->template))
+				{
+					$$sectionName = $extarctedContent;
+					ob_start();
+					include( $this->template );
+					$template = ob_get_contents();
+					ob_end_clean();
+
+					return $template;
+				}
 				return $this->$methodName( $extarctedContent );
 			}
 		}
