@@ -80,7 +80,7 @@ class FieldRender extends ContentRender
         $theAttachImage = $this->retrieveAttachementFromFullUrl( $imageSrcFull );
 
 		$output = 	'<figure class="fieldContent-image">';
-		$output .=		'<img src="'. $imageSrcFull .'" />';
+		$output .=		'<img class="fieldContent--image" src="'. $imageSrcFull .'" />';
 		$output .=	'</figure>';
 
 		if(strlen($theAttachImage->post_content) > 0)
