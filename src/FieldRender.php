@@ -29,13 +29,14 @@ class FieldRender extends ContentRender
 	* List of the custom content section
 	**/
 	private $customContentTemplate = array();
+	private $customContentSections = array();
 
 
 
 /**
 *   ==============================================================
 *
-*   PUBLIC
+*   PRIVATE
 *
 *   ==============================================================
 */
@@ -70,30 +71,40 @@ class FieldRender extends ContentRender
 	{
 		$imageTag = $image[0];
 
-        preg_match_all( '/<img(?:\s+(?:src=["\'](?P<href>[^"\'<>]+)["\']|title=["\'](?P<title>[^"\'<>]+)["\']|\w+=["\'][^"\'<>]+["\']))+/ix' , $imageTag , $imageTagAttributes );
-
-		$imageTagAttributes = $imageTagAttributes[1];
-        $imageSrcCropped 	= $imageTagAttributes[0];
-
-        $imageSrcFull = preg_replace('/-[0-9]{3,}x[0-9]{3,}/', '', $imageSrcCropped );
-
-        $theAttachImage = $this->retrieveAttachementFromFullUrl( $imageSrcFull );
+		$imageInfos = $this->getImageInfos($imageTag);
 
 		$output = 	'<figure class="fieldContent-image">';
-		$output .=		'<img class="fieldContent--image" src="'. $imageSrcFull .'" />';
+		$output .=		'<img class="fieldContent--image" src="'. $imageInfos['src'] .'" />';
+		if(strlen($imageInfos['caption']) > 0) {
+			$output .=		'<figcaption class="fieldContent-image--caption">' . $imageInfos['caption'] . '</figcaption>';
+		}
 		$output .=	'</figure>';
 
-		if(strlen($theAttachImage->post_content) > 0)
-		{
-			$output = 	'<figure class="fieldContent-image">';
-			$output .=		'<img class="fieldContent--image" src="'. $imageSrcFull .'" />';
-			$output .=		'<figcaption class="fieldContent-image--caption">' . $theAttachImage->post_content . '</figcaption>';
-			$output .=	'</figure>';
-		}
 		return $output;
 	}
 
+	/**
+	*
+	* Retrieves image src and caption
+	*
+	*/
+	private function getImageInfos( $imageTag )
+	{
+    preg_match_all( '/<img(?:\s+(?:src=["\'](?P<href>[^"\'<>]+)["\']|title=["\'](?P<title>[^"\'<>]+)["\']|\w+=["\'][^"\'<>]+["\']))+/ix' , $imageTag , $imageTagAttributes );
 
+		$imageTagAttributes = $imageTagAttributes[1];
+    $imageSrcCropped 	= $imageTagAttributes[0];
+
+    $imageSrcFull = preg_replace('/-[0-9]{3,}x[0-9]{3,}/', '', $imageSrcCropped );
+
+    $theAttachImage = $this->retrieveAttachementFromFullUrl( $imageSrcFull );
+    //var_dump($theAttachImage->post_content);die;
+    return array(
+    	'src' => $imageSrcFull,
+    	'caption' => trim($theAttachImage->post_content),
+    	'caption_text' => strip_tags(trim($theAttachImage->post_content))
+    );
+	}
 
 	/**
 	*
@@ -194,30 +205,32 @@ class FieldRender extends ContentRender
 			}
 		}
 
-		foreach ($this->customContentSections as $sectionName => $sectionRegexp )
-		{
-			if(preg_match( $sectionRegexp , $contentPart , $extarctedContent))
+		if($this->customContentSections) {
+			foreach ($this->customContentSections as $sectionName => $sectionRegexp )
 			{
-				$this->setTemplate( $this->customContentTemplate[ $sectionName ]);
-				$$sectionName = $extarctedContent;
+				if(preg_match( $sectionRegexp , $contentPart , $extarctedContent))
+				{
+					$this->setTemplate( $this->customContentTemplate[ $sectionName ]);
+					$$sectionName = $extarctedContent;
 
-				try {
-					if(!file_exists($this->template))
-					{
-						throw new Exception("The template $this->template for $sectionName cannot be found");
+					try {
+						if(!file_exists($this->template))
+						{
+							throw new Exception("The template $this->template for $sectionName cannot be found");
+						}
+					} catch (Exception $e) {
+						$this->raiseException($e);
+						return;
 					}
-				} catch (Exception $e) {
-					$this->raiseException($e);
-					return;
+
+
+					ob_start();
+					include( $this->template );
+					$template = ob_get_contents();
+					ob_end_clean();
+
+					return $template;
 				}
-
-
-				ob_start();
-				include( $this->template );
-				$template = ob_get_contents();
-				ob_end_clean();
-
-				return $template;
 			}
 		}
 
@@ -229,7 +242,7 @@ class FieldRender extends ContentRender
 /**
 *   ==============================================================
 *
-*   CONSTRUCTORE
+*   CONSTRUCTOR
 *
 *   ==============================================================
 */

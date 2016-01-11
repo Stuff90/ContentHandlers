@@ -33,7 +33,7 @@ class Content
 
 
 
-    public function __construct( $data )
+    public function __construct( $data = null )
     {
         $this->data = $data;
     }
@@ -71,6 +71,9 @@ class Content
     public function __get( $name )
     {
         if (!isset($this->data->$name)) {
+            if(is_null($this->compositeData[$name])){
+                return "";
+            }
             return $this->compositeData[$name];
         }
         return $this->data->$name;
@@ -87,15 +90,9 @@ class Content
     public function extract( $name , $type = 'post' )
     {
         $dataSrc = json_decode($this->data->$name);
-        try {
-            if(is_null($dataSrc)) {
-                throw new Exception("The data contained in object for key \"$name\" cannot be parsed");
-            }
-        } catch (Exception $e) {
-            $this->raiseException($e);
+        if(is_null($dataSrc)) {
             return;
         }
-
         if (gettype($dataSrc) == 'array')
         {
             if ( $type != 'attachement' )
@@ -103,9 +100,7 @@ class Content
                 $extractedContent = new ContentManager();
                 return $extractedContent
                     ->setContentType( $type )
-                    ->setQueryParameters('post__in', $dataSrc)
-                    ->fetch()
-                    ->all();
+                    ->setQueryParameters('post__in', $dataSrc);
             }
             $attachements = array();
             foreach ($dataSrc as $anAttachementId) {
@@ -131,6 +126,9 @@ class Content
     public function getImage( $name , $size = "thumbnail" , $icon = false )
     {
         if (!isset($this->data->$name)) {
+            if(!isset($this->compositeData[$name])){
+                return "#";
+            }
             return $this->compositeData[$name];
         }
 
@@ -156,11 +154,21 @@ class Content
     **/
     public function getImageUrl( $name , $size = "thumbnail" , $icon = false )
     {
-        $theImageArray = $this->getImage( $name , $size , $icon );
-        if(gettype($attachementID) == 'array'){
+        if(gettype($size) == 'array') {
+            $images = [];
+            foreach($size as $s) {
+                $theImageArray = $this->getImage( $name , $s , $icon );
+                $images[] = $theImageArray[0];
+            }
+            return $images;
+        } else {
+            $theImageArray = $this->getImage( $name , $size , $icon );
+            if(isset($attachementID) && gettype($attachementID) == 'array'){
+                return $theImageArray[0];
+            }
             return $theImageArray[0];
         }
-        return $theImageArray[0];
+        return "#";
     }
 }
 

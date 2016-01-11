@@ -6,6 +6,7 @@
 class ListItems extends ContentRender
 {
 
+  private $index = 0;
 
     /**
     *
@@ -15,6 +16,9 @@ class ListItems extends ContentRender
     **/
 	public function render( $itemName = 'item')
 	{
+    $stacktrace = @debug_backtrace(false);
+    $this->parentTemplateName = str_replace('.php', '', basename($stacktrace[0]['file']));
+
 		try {
 			if(gettype($this->data) != 'array') {
 				throw new Exception("You must pass an array as parameter in constructor of ListItems class");
@@ -23,10 +27,30 @@ class ListItems extends ContentRender
 			$this->raiseException($e);
 			return;
 		}
-		foreach ($this->data as $$itemName) {
-			include( $this->template );
-		}
+
+    foreach ($this->data as $$itemName) {
+
+
+      include( $this->template );
+      $this->index++;
+
+    }
+
+    if(!isset($_POST['queryParameters'])){
+      echo '<input style="display:none;" id="generated-content-manager-parameters" type="hidden" value="' . htmlspecialchars(json_encode($this->contentManagerParams)) . '">';
+    }
+
+
 		return $this;
 	}
+
+  /**
+  *
+  * Get the index of the current element
+  *
+  */
+  public function get_index() {
+    return $this->index;
+  }
 }
 

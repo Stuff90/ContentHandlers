@@ -24,7 +24,7 @@ abstract class ContentRender
 	*
 	**/
 	protected function getTemplatesPath() {
-		return get_template_directory() . "/templates/";
+		return get_template_directory() . "/app/templates/";
 	}
 
 

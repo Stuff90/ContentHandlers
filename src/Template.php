@@ -19,7 +19,7 @@ class Template extends ContentRender
 			$data 		= null;
 		}
 		if(is_null($dirPath)) {
-			$template = get_template_directory() . "/templates/" . $templateName . ".php";
+			$template = get_template_directory() . "/app/templates/" . $templateName . ".php";
 		} else {
 			$template = $dirPath . $templateName . '.php';
 		}

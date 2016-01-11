@@ -24,7 +24,9 @@ class ContentManager
     private $order = 'DESC';
     private $orderby = 'date';
     private $postId;
+    private $postIds;
     private $taxonomy;
+    private $meta_query;
     private $queryParameters;
 
     private $contents = array();
@@ -80,15 +82,26 @@ class ContentManager
             $theParameters['p'] = $this->postId;
         }
 
+        if(!is_null($this->postIds))
+        {
+            $theParameters['post__in'] = $this->postIds;
+        }
+
         if(!is_null($this->taxonomy))
         {
             $theParameters['tax_query'] = $this->taxonomy;
+        }
+
+        if(!is_null($this->meta_query))
+        {
+            $theParameters['meta_query'] = $this->meta_query;
         }
 
         if(!is_null($this->contentType))
         {
             $theParameters['post_type'] = $this->contentType;
         }
+
         return $theParameters;
     }
 
@@ -136,6 +149,66 @@ class ContentManager
 
     /**
     *
+    * Return an instance of ListItems calss to allow iteration through the content
+    *
+    **/
+    public function iterate()
+    {
+        try {
+            if(sizeof($this->contents) > 0 ) {
+                $thelistItem = new ListItems($this->contents);
+                foreach ($this->retrieveParameters() as $key => $value) {
+                    $thelistItem->setParam($key , $value);
+                }
+                return $thelistItem->setParam('contentManagerParams' , $this->retrieveParameters());
+            } else {
+                throw new Exception("No post found ! Did you fetch() data before iterate them ?");
+            }
+        } catch (Exception $e) {
+            $this->raiseException($e);
+            return;
+        }
+
+        return $this;
+    }
+
+
+
+
+    /**
+    *
+    * Return an array of alk data retrieved for given parameters
+    *
+    **/
+    public function paginate( $postPerPage = null )
+    {
+        if(isset($_POST['queryParameters'])){
+            $queryParameters = json_decode(str_replace('\\', '', $_POST['queryParameters']));
+            foreach ( $queryParameters as $parameterName => $parameterValue ) {
+                if($parameterName == 'filter') {
+                    $this->setFilterTaxonomy($parameterValue);
+                } else if($parameterName == 'posts_per_page') {
+                    $this->setPostPerPage($parameterValue);
+                } else {
+                    $this->setQueryParameters($parameterName , $parameterValue);
+                }
+            }
+        }
+
+        if($this->postPerPage < 0) {
+            $this->setPostPerPage($postPerPage);
+        }
+        $offset = isset($_POST['step']) ? $_POST['step'] * $this->postPerPage : 0;
+        $this->setQueryParameters('offset', $offset);
+
+        return $this;
+    }
+
+
+
+
+    /**
+    *
     * Return an array of alk data retrieved for given parameters
     *
     **/
@@ -154,6 +227,9 @@ class ContentManager
     **/
     public function first()
     {
+        if(!isset($this->contents[0])){
+            return new Content();
+        }
         return $this->contents[0];
     }
 
@@ -190,6 +266,18 @@ class ContentManager
         {
             $this->queryParameters[$queryParametersKey] = $queryParametersValue;
         }
+
+        switch($queryParametersKey) {
+            case 'filter':
+                $this->setFilterTaxonomy($queryParametersValue);
+                break;
+            case 'contributor':
+                $this->setContributorMetaQuery($queryParametersValue);
+                break;
+            default:
+                break;
+        }
+
         return $this;
     }
 
@@ -205,6 +293,19 @@ class ContentManager
     public function setPostId( $postId )
     {
         $this->postId = $postId;
+        return $this;
+    }
+
+
+
+    /**
+    *
+    * Set an array of post id to search in
+    *
+    **/
+    public function setPostIds( $postIds )
+    {
+        $this->postIds = $postIds;
         return $this;
     }
 
@@ -250,7 +351,53 @@ class ContentManager
         return $this;
     }
 
+    /**
+    *
+    * Shortcut for setting a filtering
+    *
+    **/
+    private function setFilterTaxonomy($tags) {
+        $tags = gettype($tags) === 'object' ? get_object_vars($tags) : $tags;
+        $tags = array_values($tags);
 
+        if(sizeof($tags)) {
+            $this->setTaxonomy(array(
+                array (
+                    'taxonomy' => 'filter',
+                    'field'    => 'slug',
+                    'terms'    => $tags
+                )
+            ));
+        }
+    }
+
+    /**
+    *
+    * Set the meta query
+    *
+    **/
+    public function setMetaQuery( $meta_query )
+    {
+        $this->meta_query = $meta_query;
+        return $this;
+    }
+
+    /**
+    *
+    * Set a meta query to get post from a contributor
+    *
+    **/
+    private function setContributorMetaQuery($contributor_id) {
+        if($contributor_id) {
+            $this->setMetaQuery(array(
+                array(
+                    'key' => 'mastercredits',
+                    'value' => $contributor_id,
+                    'compare' => 'LIKE'
+                )
+            ));
+        }
+    }
 
 
     /**
@@ -276,6 +423,28 @@ class ContentManager
     {
         $this->postPerPage = $postPerPage;
         return $this;
+    }
+
+    public function getPostsPerPage() {
+        return $this->postPerPage;
+    }
+
+    /**
+    *
+    * Returns the number of contents
+    *
+    **/
+    public function contentsCount() {
+        return sizeof($this->contents);
+    }
+
+    /**
+    *
+    * Returns true if the content manager has at least one content
+    *
+    **/
+    public function hasContent() {
+        return $this->contentsCount() > 0;
     }
 }
 
