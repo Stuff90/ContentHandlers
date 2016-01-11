@@ -1,8 +1,9 @@
 # ContentHandlers
 Content manager for WordPress
 
-Include the whole directory to your theme then add this to `function.php` file
-```php
-require_once 'class/ContentHandlers/build.php';
+Clone the repository into the plugins directory:
+```bash
+cd wp-content/plugins
+git clone https://github.com/Stuff90/ContentHandlers.git
 ```
 
