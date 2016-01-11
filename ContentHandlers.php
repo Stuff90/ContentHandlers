@@ -9,7 +9,7 @@
     * License: All rights reserved to Ileotech
     */
 
-define("CONTENT_HANDLERS_PATH", ABSPATH . 'wp-content/plugins/content-handlers/');
+define("CONTENT_HANDLERS_PATH", ABSPATH . 'wp-content/plugins/ContentHandlers/');
 
 /**
 *
